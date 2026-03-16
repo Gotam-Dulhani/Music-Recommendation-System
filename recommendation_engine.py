@@ -210,6 +210,35 @@ class MusicRecommender:
         top_songs = song_stats.sort_values(by='total_score', ascending=False).head(top_n)
         return pd.merge(top_songs, self.songs_df, on='song_id')
 
+    def get_recommendations_by_preferences(self, genre=None, mood=None, energy=0.5, danceability=0.5, top_n=8):
+        """Recommend songs based on specific user-selected features and categories."""
+        df = self.songs_df.copy()
+        
+        # 1. Filter by categorical features if provided
+        if genre and genre != "Any":
+            df = df[df['genre'] == genre]
+        if mood and mood != "Any":
+            df = df[df['mood'] == mood]
+            
+        if df.empty:
+            return pd.DataFrame()
+            
+        # 2. Calculate distance from desired audio features (Energy, Danceability)
+        # We'll use a simple Euclidean distance-based score
+        # Note: In a real app, we'd use the scaled features from _prepare_content_matrix
+        # but for simplicity and responsiveness to direct input, we use raw values here
+        
+        df['dist'] = np.sqrt(
+            (df['energy'] - energy)**2 + 
+            (df['danceability'] - danceability)**2
+        )
+        
+        # 3. Rank by proximity (lower distance is better)
+        # Convert distance to a 0-100 score for display
+        df['preference_score'] = (1 - df['dist'] / np.sqrt(2)) * 100
+        
+        return df.sort_values(by='dist').head(top_n)
+
 if __name__ == "__main__":
     import os
     data_dir = os.path.dirname(os.path.abspath(__file__))

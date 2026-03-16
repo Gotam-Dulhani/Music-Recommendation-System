@@ -2,7 +2,14 @@
 
 This project is an AI-powered music discovery platform that uses Machine Learning to suggest tracks based on audio features and listener patterns.
 
-## 🏗 project Architecture
+## ✨ New: Interactive discovery
+
+We've updated the system to give you direct control over your music discovery:
+
+- **🎨 Discover Your Vibe**: Select specific genres and moods, and use precision sliders to tune the Energy and Danceability of your recommendations.
+- **🔍 Search & Explore**: Search for any song in the database and immediately find tracks that share its unique "Audio DNA".
+
+## 🏗 Project Architecture
 
 You might notice there isn't a traditional `/frontend` and `/backend` directory. Here's why:
 
@@ -37,4 +44,5 @@ Once the command is running, open your browser to:
 ## 🧠 Behind the Scenes
 - **Content-Based Filtering**: Analyzes audio DNA (tempo, mood, genre) using Cosine Similarity.
 - **Collaborative Filtering**: Identifies patterns between users with similar tastes.
-- **Hybrid Engine**: Combines both methods for the most accurate recommendations.
+- **Preference-Based Engine**: Uses Euclidean distance-based ranking to match user-selected energy and danceability levels.
+- **Hybrid Engine**: Combines all the above methods for the most accurate and personalized recommendations.

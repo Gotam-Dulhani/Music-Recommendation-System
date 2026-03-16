@@ -169,10 +169,12 @@ def main():
         return
 
     # Tabs for organization
-    tab1, tab2, tab3 = st.tabs([
+    tab1, tab2, tab3, tab4, tab5 = st.tabs([
         "✨ Vibe Mix (Hybrid AI)", 
         "🎧 Sounds Like Your Favorites", 
-        "👥 Because Listeners Like You"
+        "👥 Because Listeners Like You",
+        "🎨 Discover Your Vibe",
+        "🔍 Search & Explore"
     ])
     
     with tab1:
@@ -224,6 +226,73 @@ def main():
             for idx, (_, row) in enumerate(collab_recs.iterrows()):
                 with cols[idx % 4]:
                     render_song_card(row, score_col='collab_score', score_name="Community Rating")
+
+    with tab4:
+        st.header("Customize Your Current Vibe")
+        st.write("Tell us exactly what you're looking for right now.")
+        
+        c1, c2 = st.columns(2)
+        with c1:
+            genres = ["Any"] + sorted(engine.songs_df['genre'].unique().tolist())
+            selected_genre = st.selectbox("I'm in the mood for some...", genres)
+            
+            energy = st.slider("Energy Level", 0.0, 1.0, 0.5, 0.05, help="Low: Chill/Sleepy, High: Party/Gym")
+            
+        with c2:
+            moods = ["Any"] + sorted(engine.songs_df['mood'].unique().tolist())
+            selected_mood = st.selectbox("My current mood is...", moods)
+            
+            dance = st.slider("Danceability", 0.0, 1.0, 0.5, 0.05, help="Low: To listen, High: To dance")
+            
+        if st.button("Generate My Vibe", type="primary"):
+            pref_recs = engine.get_recommendations_by_preferences(
+                genre=selected_genre, 
+                mood=selected_mood, 
+                energy=energy, 
+                danceability=dance
+            )
+            
+            if pref_recs.empty:
+                st.warning("No songs found matching those specific filters. Try broadening your search!")
+            else:
+                st.subheader(f"Recommendations for: {selected_genre} • {selected_mood}")
+                cols = st.columns(4)
+                for idx, (_, row) in enumerate(pref_recs.iterrows()):
+                    with cols[idx % 4]:
+                        render_song_card(row, score_col='preference_score', score_name="Vibe Match")
+
+    with tab5:
+        st.header("Find Something Specific")
+        st.write("Search for a song you already love to find similar tracks.")
+        
+        search_query = st.text_input("Search by song title or artist", placeholder="e.g. Shape of You")
+        
+        if search_query:
+            results = engine.songs_df[
+                engine.songs_df['title'].str.contains(search_query, case=False) | 
+                engine.songs_df['artist'].str.contains(search_query, case=False)
+            ].head(5)
+            
+            if results.empty:
+                st.info("No matching songs found.")
+            else:
+                st.write(f"Found {len(results)} matches:")
+                for _, row in results.iterrows():
+                    col_a, col_b = st.columns([3, 1])
+                    with col_a:
+                        st.write(f"**{row['title']}** - {row['artist']} ({row['genre']})")
+                    with col_b:
+                        if st.button(f"Recs Like This", key=row['song_id']):
+                            st.session_state.search_recs = engine.get_content_recommendations(row['song_id'], top_n=8)
+                            st.session_state.search_target = row['title']
+                
+                if 'search_recs' in st.session_state:
+                    st.markdown("---")
+                    st.subheader(f"Because you liked: {st.session_state.search_target}")
+                    cols = st.columns(4)
+                    for idx, (_, row) in enumerate(st.session_state.search_recs.iterrows()):
+                        with cols[idx % 4]:
+                            render_song_card(row, score_col='similarity_score', score_name="DNA Match")
 
 if __name__ == "__main__":
     main()
