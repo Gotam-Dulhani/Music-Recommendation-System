@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VibeStream - AI Music Recommendations</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <h2>User Profile</h2>
+        <form method="GET" action="/">
+            <input type="hidden" name="tab" value="{{ tab }}">
+            <label for="user">Select User ID</label>
+            <select name="user" id="user" onchange="this.form.submit()">
+                {% for u in users %}
+                <option value="{{ u }}" {% if u == selected_user %}selected{% endif %}>{{ u }}</option>
+                {% endfor %}
+            </select>
+        </form>
+
+        <div class="about">
+            <strong>About VibeStream Engine</strong><br><br>
+            This engine uses machine learning to suggest songs:<br>
+            - <strong>Content-Based:</strong> Analyzes audio features like Tempo, Energy, and Mood.<br>
+            - <strong>Collaborative:</strong> Finds patterns across similar listeners.<br>
+            - <strong>Hybrid ML:</strong> Blends both for the ultimate playlist.
+        </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+        <h1 class="main-title">VibeStream</h1>
+        <p class="sub-title">AI-Powered Music Discovery</p>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <a href="/?user={{ selected_user }}&tab=hybrid" class="tab-btn {% if tab == 'hybrid' %}active{% endif %}">Vibe Mix (Hybrid AI)</a>
+            <a href="/?user={{ selected_user }}&tab=content" class="tab-btn {% if tab == 'content' %}active{% endif %}">Sounds Like Your Favorites</a>
+            <a href="/?user={{ selected_user }}&tab=collab" class="tab-btn {% if tab == 'collab' %}active{% endif %}">Because Listeners Like You</a>
+            <a href="/?user={{ selected_user }}&tab=preferences" class="tab-btn {% if tab == 'preferences' %}active{% endif %}">Discover Your Vibe</a>
+            <a href="/?user={{ selected_user }}&tab=search" class="tab-btn {% if tab == 'search' %}active{% endif %}">Search & Explore</a>
+        </div>
+
+        {% if history.empty and popular is not none %}
+            <div class="warn-box">New user detected. Showing popular tracks.</div>
+            <div class="cards-grid">
+                {% for _, row in popular.iterrows() %}
+                <div class="music-card">
+                    <div class="card-title">{{ row['title'] }}</div>
+                    <div class="card-artist">by {{ row['artist'] }}</div>
+                    <div>
+                        <span class="badge badge-genre">{{ row['genre'] }}</span>
+                        <span class="badge badge-mood">{{ row['mood'] }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+        {% elif tab == 'hybrid' %}
+            <h2 class="section-header">The Ultimate Vibe Mix for {{ selected_user }}</h2>
+            <p class="section-desc">A curated selection specifically for you, combining audio analysis and listener trends.</p>
+
+            {% if hybrid_recs is not none and not hybrid_recs.empty %}
+            <div class="cards-grid">
+                {% for _, row in hybrid_recs.iterrows() %}
+                <div class="music-card">
+                    <div class="card-title">{{ row['title'] }}</div>
+                    <div class="card-artist">by {{ row['artist'] }}</div>
+                    <div>
+                        <span class="badge badge-genre">{{ row['genre'] }}</span>
+                        <span class="badge badge-mood">{{ row['mood'] }}</span>
+                        <span class="badge badge-score">{{ format_score(row, 'hybrid_score', 'Vibe Score') }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="info-box">Not enough data to generate hybrid mix yet.</div>
+            {% endif %}
+
+            <hr>
+            <h3 class="section-sub">Your Recent Top Tracks</h3>
+            <div class="cards-grid">
+                {% for _, row in history.head(4).iterrows() %}
+                <div class="music-card">
+                    <div class="card-title">{{ row['title'] }}</div>
+                    <div class="card-artist">by {{ row['artist'] }}</div>
+                    <div>
+                        <span class="badge badge-genre">{{ row['genre'] }}</span>
+                        <span class="badge badge-mood">{{ row['mood'] }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+        {% elif tab == 'content' %}
+            <h2 class="section-header">Discovered via Audio DNA</h2>
+            <p class="section-desc">Songs sharing the exact tempo, energy, and mood profile as your top track.</p>
+            {% if top_song is not none %}
+            <p style="color:#bb86fc; margin-bottom:1rem;"><strong>Based on your love for:</strong> {{ top_song['title'] }} by {{ top_song['artist'] }}</p>
+            {% endif %}
+
+            {% if content_recs is not none and not content_recs.empty %}
+            <div class="cards-grid">
+                {% for _, row in content_recs.iterrows() %}
+                <div class="music-card">
+                    <div class="card-title">{{ row['title'] }}</div>
+                    <div class="card-artist">by {{ row['artist'] }}</div>
+                    <div>
+                        <span class="badge badge-genre">{{ row['genre'] }}</span>
+                        <span class="badge badge-mood">{{ row['mood'] }}</span>
+                        <span class="badge badge-score">{{ format_score(row, 'similarity_score', 'Match') }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="info-box">Could not find similar tracks.</div>
+            {% endif %}
+
+        {% elif tab == 'collab' %}
+            <h2 class="section-header">Trending in Your Circle</h2>
+            <p class="section-desc">Songs highly rated by users with an identical ear for music.</p>
+
+            {% if collab_recs is not none and not collab_recs.empty %}
+            <div class="cards-grid">
+                {% for _, row in collab_recs.iterrows() %}
+                <div class="music-card">
+                    <div class="card-title">{{ row['title'] }}</div>
+                    <div class="card-artist">by {{ row['artist'] }}</div>
+                    <div>
+                        <span class="badge badge-genre">{{ row['genre'] }}</span>
+                        <span class="badge badge-mood">{{ row['mood'] }}</span>
+                        <span class="badge badge-score">{{ format_score(row, 'collab_score', 'Community Rating') }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="info-box">Explore more music to find your listener community.</div>
+            {% endif %}
+
+        {% elif tab == 'preferences' %}
+            <h2 class="section-header">Customize Your Current Vibe</h2>
+            <p class="section-desc">Tell us exactly what you're looking for right now.</p>
+
+            <form method="GET" action="/">
+                <input type="hidden" name="user" value="{{ selected_user }}">
+                <input type="hidden" name="tab" value="preferences">
+                <div class="pref-grid">
+                    <div class="pref-group">
+                        <label>I'm in the mood for some...</label>
+                        <select name="genre">
+                            {% for g in genres %}
+                            <option value="{{ g }}" {% if g == request.args.get('genre', 'Any') %}selected{% endif %}>{{ g }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="pref-group">
+                        <label>My current mood is...</label>
+                        <select name="mood">
+                            {% for m in moods %}
+                            <option value="{{ m }}" {% if m == request.args.get('mood', 'Any') %}selected{% endif %}>{{ m }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="pref-group">
+                        <label>Energy Level: <span class="range-val" id="energy-val">{{ request.args.get('energy', '0.5') }}</span></label>
+                        <input type="range" name="energy" min="0" max="1" step="0.05" value="{{ request.args.get('energy', '0.5') }}" oninput="document.getElementById('energy-val').textContent=this.value">
+                    </div>
+                    <div class="pref-group">
+                        <label>Danceability: <span class="range-val" id="dance-val">{{ request.args.get('danceability', '0.5') }}</span></label>
+                        <input type="range" name="danceability" min="0" max="1" step="0.05" value="{{ request.args.get('danceability', '0.5') }}" oninput="document.getElementById('dance-val').textContent=this.value">
+                    </div>
+                    <div class="pref-group">
+                        <label>Tempo (BPM): <span class="range-val" id="tempo-val">{{ request.args.get('tempo', (tempo_min + tempo_max) // 2) }}</span></label>
+                        <input type="range" name="tempo" min="{{ tempo_min }}" max="{{ tempo_max }}" step="1" value="{{ request.args.get('tempo', (tempo_min + tempo_max) // 2) }}" oninput="document.getElementById('tempo-val').textContent=this.value">
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary">Generate My Vibe</button>
+            </form>
+
+            {% if pref_recs is not none %}
+                {% if pref_recs.empty %}
+                <div class="warn-box" style="margin-top:1rem;">No songs found matching those specific filters. Try broadening your search!</div>
+                {% else %}
+                <h3 class="section-sub">Recommendations for: {{ request.args.get('genre', 'Any') }} &bull; {{ request.args.get('mood', 'Any') }}</h3>
+                <div class="cards-grid">
+                    {% for _, row in pref_recs.iterrows() %}
+                    <div class="music-card">
+                        <div class="card-title">{{ row['title'] }}</div>
+                        <div class="card-artist">by {{ row['artist'] }}</div>
+                        <div>
+                            <span class="badge badge-genre">{{ row['genre'] }}</span>
+                            <span class="badge badge-mood">{{ row['mood'] }}</span>
+                            <span class="badge badge-score">{{ format_score(row, 'preference_score', 'Vibe Match') }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            {% endif %}
+
+        {% elif tab == 'search' %}
+            <h2 class="section-header">Find Something Specific</h2>
+            <p class="section-desc">Search for a song you already love to find similar tracks.</p>
+
+            <form method="GET" action="/" class="search-box">
+                <input type="hidden" name="user" value="{{ selected_user }}">
+                <input type="hidden" name="tab" value="search">
+                <input type="text" name="q" value="{{ query }}" placeholder="Search by song title or artist">
+                <button type="submit">Search</button>
+            </form>
+
+            {% if results is not none %}
+                {% if results.empty %}
+                <div class="info-box">No matching songs found.</div>
+                {% else %}
+                <p style="color:#8b949e; margin-bottom:0.8rem;">Found {{ results|length }} match{{ 'es' if results|length > 1 else '' }}:</p>
+                {% for _, row in results.iterrows() %}
+                <div class="search-result">
+                    <div class="info">
+                        <strong>{{ row['title'] }}</strong> - {{ row['artist'] }} ({{ row['genre'] }})
+                    </div>
+                    <a href="/?user={{ selected_user }}&tab=search&q={{ query }}&rec_for={{ row['song_id'] }}">
+                        <button class="btn-sm" type="button">Recs Like This</button>
+                    </a>
+                </div>
+                {% endfor %}
+                {% endif %}
+            {% endif %}
+
+            {% if search_recs is not none and not search_recs.empty %}
+            <hr>
+            <h3 class="section-sub">Because you liked: {{ search_target }}</h3>
+            <div class="cards-grid">
+                {% for _, row in search_recs.iterrows() %}
+                <div class="music-card">
+                    <div class="card-title">{{ row['title'] }}</div>
+                    <div class="card-artist">by {{ row['artist'] }}</div>
+                    <div>
+                        <span class="badge badge-genre">{{ row['genre'] }}</span>
+                        <span class="badge badge-mood">{{ row['mood'] }}</span>
+                        <span class="badge badge-score">{{ format_score(row, 'similarity_score', 'DNA Match') }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        {% endif %}
+    </main>
+</div>
+</body>
+</html>
