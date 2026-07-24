@@ -119,9 +119,16 @@ def render_song_card(row, score_col=None, score_name="Match"):
     
     if score_col and score_col in row:
         score_val = row[score_col]
-        # Format score based on magnitude
-        if score_val < 1.0: # Similarity distance
+        if score_col == 'similarity_score':
             disp_score = f"{score_val*100:.0f}%"
+        elif score_col == 'collab_score':
+            disp_score = f"{score_val*100:.0f}%"
+        elif score_col == 'hybrid_score':
+            max_possible = 1.15
+            pct = min(score_val / max_possible, 1.0) * 100
+            disp_score = f"{pct:.0f}%"
+        elif score_col == 'preference_score':
+            disp_score = f"{score_val:.0f}%"
         else:
             disp_score = f"{score_val:.1f}"
         html += f'<span class="badge badge-score">{score_name}: {disp_score}</span>'
@@ -231,7 +238,7 @@ def main():
         st.header("Customize Your Current Vibe")
         st.write("Tell us exactly what you're looking for right now.")
         
-        c1, c2 = st.columns(2)
+        c1, c2, c3 = st.columns(3)
         with c1:
             genres = ["Any"] + sorted(engine.songs_df['genre'].unique().tolist())
             selected_genre = st.selectbox("I'm in the mood for some...", genres)
@@ -243,13 +250,20 @@ def main():
             selected_mood = st.selectbox("My current mood is...", moods)
             
             dance = st.slider("Danceability", 0.0, 1.0, 0.5, 0.05, help="Low: To listen, High: To dance")
+        
+        with c3:
+            tempo_min = int(engine.songs_df['tempo'].min())
+            tempo_max = int(engine.songs_df['tempo'].max())
+            tempo = st.slider("Tempo (BPM)", tempo_min, tempo_max, (tempo_min + tempo_max) // 2, 
+                              help="Low: Slow/Relaxed, High: Fast/Upbeat")
             
         if st.button("Generate My Vibe", type="primary"):
             pref_recs = engine.get_recommendations_by_preferences(
                 genre=selected_genre, 
                 mood=selected_mood, 
                 energy=energy, 
-                danceability=dance
+                danceability=dance,
+                tempo=tempo
             )
             
             if pref_recs.empty:
