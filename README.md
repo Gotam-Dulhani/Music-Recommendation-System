@@ -1,4 +1,4 @@
-# 🎵 AI Music Recommendation System
+# AI Music Recommendation System
 
 [![Contributors](https://img.shields.io/github/contributors/Gotam-Dulhani/Music-Recommendation-System)](https://github.com/Gotam-Dulhani/Music-Recommendation-System/graphs/contributors)
 [![Forks](https://img.shields.io/github/forks/Gotam-Dulhani/Music-Recommendation-System)](https://github.com/Gotam-Dulhani/Music-Recommendation-System/network/members)
@@ -6,129 +6,143 @@
 [![Issues](https://img.shields.io/github/issues/Gotam-Dulhani/Music-Recommendation-System)](https://github.com/Gotam-Dulhani/Music-Recommendation-System/issues)
 [![License](https://img.shields.io/github/license/Gotam-Dulhani/Music-Recommendation-System)](https://github.com/Gotam-Dulhani/Music-Recommendation-System/blob/main/LICENSE)
 
-> **VibeStream** — an interactive AI music discovery platform that uses Machine Learning to suggest tracks based on audio features and listener patterns.
-
-
----
-
-## 📌 Table of Contents
-
-* [About The Project](#-about-the-project)
-* [Key Features](#-key-features)
-* [Built With](#-built-with)
-* [Project Architecture](#-project-architecture)
-* [How It Works](#-how-it-works)
-* [Project Structure](#-project-structure)
-* [Getting Started](#-getting-started)
-* [Usage](#-usage)
-* [Contributing](#-contributing)
-* [License](#-license)
-* [Contact](#-contact)
+> **VibeStream** - an AI music discovery platform that recommends tracks using content-based filtering, collaborative filtering, and a hybrid ML scoring engine. Deployed on Vercel with a Flask backend.
 
 ---
 
-## 💡 About The Project
+## Table of Contents
 
-**VibeStream** is an interactive AI music discovery app built with **Streamlit**. It features a hybrid recommendation engine combining content-based filtering (Audio DNA analysis) and collaborative user patterns. Users can shape their discovery with precision sliders for energy and danceability, or search by title to find tracks with matching audio profiles — all served through a clean, browser-based interface.
-
----
-
-## ✨ Key Features
-
-* **Hybrid Recommendations** – Combines content-based and collaborative filtering for accuracy.
-* **Audio DNA Analysis** – Analyzes tempo, mood, energy, and danceability using Cosine Similarity.
-* **Precision Sliders** – Fine-tune discovery by energy and danceability in real time.
-* **Title Search** – Find tracks with matching audio profiles by searching song titles.
-* **Listener Pattern Matching** – Identifies users with similar tastes for collaborative filtering.
-* **Interactive UI** – Clean, browser-based interface powered by Streamlit.
-* **Synthetic Data Generation** – Built-in data generator to refresh the music dataset.
-* **Minimal Codebase** – Clean separation of ML logic and UI across just a few files.
+* [About The Project](#about-the-project)
+* [Key Features](#key-features)
+* [Live Demo](#live-demo)
+* [Built With](#built-with)
+* [How It Works](#how-it-works)
+* [Project Structure](#project-structure)
+* [Getting Started](#getting-started)
+* [Deployment](#deployment)
+* [Contributing](#contributing)
+* [License](#license)
+* [Contact](#contact)
 
 ---
 
-## 🛠 Built With
+## About The Project
+
+**VibeStream** is an AI-powered music recommendation system with a Flask web interface deployed on Vercel. It combines three recommendation strategies:
+
+1. **Content-Based Filtering** - Computes cosine similarity between songs using weighted audio features (energy, danceability, tempo) and categorical features (genre, mood). Audio features are weighted 3x higher than genre/mood to prevent categorical dominance and ensure recommendations consider actual sound characteristics.
+
+2. **Collaborative Filtering** - Identifies the 10 most similar listeners based on listening history, normalizes their interaction scores by activity level, and recommends tracks the target user hasn't heard.
+
+3. **Hybrid Engine** - Merges both approaches with a 55/45 weighted split (content/collaborative), averages duplicate recommendations, and boosts songs found by both methods by 15%.
+
+---
+
+## Key Features
+
+- **Hybrid AI Recommendations** - Weighted combination of content-based and collaborative filtering
+- **Content-Based Audio DNA** - Cosine similarity with properly weighted audio features (energy, danceability, tempo) + genre/mood encoding
+- **Collaborative Listener Matching** - Finds top-10 similar users, normalizes by activity, surfaces unexplored tracks
+- **Preference Sliders** - Fine-tune discovery by energy, danceability, and tempo (BPM) in real time
+- **Song Search** - Search by title or artist to find tracks with matching audio profiles
+- **Dark Mode UI** - Responsive design with card-based layouts and score badges
+- **Synthetic Data Generation** - Built-in generator for 500 songs and 50 user interaction profiles
+
+---
+
+## Live Demo
+
+The app is deployed on Vercel: `https://music-recommendation-system-<your-project>.vercel.app`
+
+---
+
+## Built With
 
 | Technology | Purpose |
 |---|---|
-| Python 3.8+ | Core language |
-| Streamlit | Web UI framework (frontend + backend in one) |
-| scikit-learn | ML algorithms (Cosine Similarity, collaborative filtering) |
+| Python 3.11 | Core language |
+| Flask | Web framework and WSGI entry point for Vercel |
+| scikit-learn | Cosine similarity, MinMaxScaler, StandardScaler |
 | pandas / NumPy | Data processing and feature engineering |
-| Synthetic Music Dataset | Generated via `data_generator.py` |
+| Vercel | Serverless deployment platform |
 
 ---
 
-## 🏗 Project Architecture
+## How It Works
 
-You might notice there isn't a traditional `/frontend` and `/backend` directory. Here's why:
-
-* **Streamlit Framework**: We used **Streamlit**, which is an industry standard for Machine Learning and Data Science apps. It allows Python code to serve as both the backend (ML logic) and the frontend (UI generation) simultaneously.
-* **Efficiency**: For ML prototypes, this "single-stack" approach is much faster to build, deploy, and maintain compared to setting up a separate React frontend and Flask/FastAPI backend.
-* **ML Logic**: The recommendation engine is encapsulated in `recommendation_engine.py`, while the frontend is handled in `app.py`.
-
----
-
-## 🧠 How It Works
 ```
-User Input (mood / genre / sliders / title search)
-        │
-        ▼
-Audio Feature Extraction
-(tempo, energy, danceability, mood)
-        │
-        ▼
+User Input (genre / mood / energy / danceability / tempo)
+        |
+        v
+Feature Engineering
+  - One-hot encode genre (8) + mood (6)
+  - MinMaxScaler on energy, danceability, tempo
+  - Weight: audio features x3, genre/mood x 1/sqrt(cols)
+        |
+        v
 Content-Based Filtering
-(Cosine Similarity on Audio DNA)
-        │
-        ▼
+  - Cosine similarity matrix (500x500 songs)
+  - Top-N most similar tracks, excluding user history
+        |
+        v
 Collaborative Filtering
-(User pattern matching)
-        │
-        ▼
-Hybrid Engine
-(Weighted combination of both methods)
-        │
-        ▼
-Ranked Track Recommendations
-(Displayed in Streamlit UI)
+  - User-item interaction matrix (50 users x 472 songs)
+  - Cosine similarity between users
+  - Top-10 similar users, weighted recommendations
+  - Normalized by per-user activity level
+        |
+        v
+Hybrid Scoring
+  - content_score * 0.55 + collab_score * 0.45
+  - +0.15 boost for songs found by both methods
+        |
+        v
+Ranked Recommendations (top-8)
 ```
 
-### Step-by-Step Breakdown
+### Recommendation Methods
 
-| Step | Description |
-|---|---|
-| **1. Data Loading** | Loads synthetic music dataset (`songs.csv`, `interactions.csv`) generated by `data_generator.py` |
-| **2. Feature Extraction** | Parses audio attributes (tempo, mood, genre, energy, danceability) per track |
-| **3. Content Filtering** | Computes Cosine Similarity between tracks based on audio DNA features |
-| **4. Collaborative Filtering** | Identifies users with similar listening histories and surfaces their top tracks |
-| **5. Hybrid Scoring** | Blends both filtering methods with weighted scoring for final ranking |
-| **6. UI Rendering** | `app.py` presents recommendations interactively via Streamlit with sliders and search |
-| **7. Exit** | Close the browser tab or stop the terminal process (`Ctrl+C`) |
+| Method | Input | Algorithm | Output |
+|---|---|---|---|
+| **Content-Based** | Song ID | Cosine similarity on weighted audio features | Similar tracks with match score |
+| **Collaborative** | User ID | User similarity x normalized interaction scores | Tracks from similar listeners |
+| **Hybrid** | User ID | Weighted blend of content + collaborative | Combined ranked playlist |
+| **Preferences** | Genre/Mood/Sliders | Euclidean distance in MinMax-scaled 3D space | Tracks matching desired vibe |
+| **Search** | Text query | String matching on title/artist + content recs | Search results + similar tracks |
 
 ---
 
-## 📁 Project Structure
+## Project Structure
+
 ```
 Music-Recommendation-System/
-│
-├── app.py                    # Streamlit frontend — UI and user interaction
-├── recommendation_engine.py  # ML backend — filtering logic and hybrid scoring
-├── data_generator.py         # Generates synthetic music dataset
-├── get_yt_info.py            # YouTube track info utility
-├── songs.csv                 # Synthetic songs dataset
-├── interactions.csv          # Synthetic user interaction data
-├── requirements.txt          # Python dependencies
-└── README.md
+|
+|-- api/
+|   +-- index.py                # Flask WSGI app (Vercel entry point)
+|-- templates/
+|   +-- index.html              # HTML template with inline CSS
+|-- static/
+|   +-- style.css               # CSS (reference copy, inlined in template)
+|-- recommendation_engine.py    # ML engine: content, collaborative, hybrid filtering
+|-- data_generator.py           # Generates synthetic songs.csv and interactions.csv
+|-- app.py                      # Streamlit version (for local use)
+|-- get_yt_info.py              # YouTube track info utility
+|-- songs.csv                   # 500 synthetic songs with audio features
+|-- interactions.csv            # 1,451 user-song interactions (50 users)
+|-- vercel.json                 # Vercel deployment configuration
+|-- requirements.txt            # Python dependencies (pandas, numpy, scikit-learn, flask)
+|-- .gitignore
++-- README.md
 ```
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
-* Python 3.8+
-* pip
+- Python 3.8+
+- pip
 
 ### Installation
 
@@ -154,55 +168,60 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-**4. Generate the dataset** *(optional — refresh synthetic music data)*
+**4. Generate the dataset** *(optional - refresh synthetic music data)*
 ```bash
 python data_generator.py
 ```
 
-**5. Launch the web app**
+### Running Locally
+
+**Option A: Flask (same as production)**
+```bash
+flask --app api.index run
+```
+Open [http://localhost:5000](http://localhost:5000)
+
+**Option B: Streamlit (original UI)**
 ```bash
 streamlit run app.py
+```
+Open [http://localhost:8501](http://localhost:8501)
+
+---
+
+## Deployment
+
+### Vercel
+
+1. Push to GitHub
+2. Import repository on [vercel.com/new](https://vercel.com/new)
+3. Vercel auto-detects the Python runtime from `vercel.json` and `api/index.py`
+4. Deploy - no build configuration needed
+
+The `vercel.json` routes all requests to the Flask app in `api/index.py`:
+```json
+{
+    "builds": [{ "src": "api/index.py", "use": "@vercel/python" }],
+    "routes": [
+        { "src": "/static/(.*)", "dest": "/static/$1" },
+        { "src": "/(.*)", "dest": "/api/index.py" }
+    ]
+}
 ```
 
 ---
 
-## 📝 Usage
-
-Once the app is running, open your browser to:
-**[http://localhost:8501](http://localhost:8501)**
-
-* Use the **energy and danceability sliders** to shape your music discovery.
-* **Search by title** to find tracks with matching audio profiles.
-* The hybrid engine analyzes your input and returns ranked track recommendations in real time.
-
-### Output
-
-Each recommendation displays:
-
-| Element | Description |
-|---|---|
-| **Track Name** | Title of the recommended song |
-| **Artist** | Track artist |
-| **Similarity Score** | How closely the track matches your audio profile |
-| **Genre / Mood** | Audio category tags |
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome!
+## Contributing
 
 1. Fork the repo
 2. Create a feature branch:
 ```bash
 git checkout -b feature/AmazingFeature
 ```
-
 3. Commit your changes:
 ```bash
 git commit -m "Add AmazingFeature"
 ```
-
 4. Push and open a Pull Request:
 ```bash
 git push origin feature/AmazingFeature
@@ -210,22 +229,22 @@ git push origin feature/AmazingFeature
 
 ---
 
-## 📝 License
+## License
 
 Distributed under the **MIT License**. See `LICENSE` for details.
 
 ---
 
-## 📫 Contact
+## Contact
 
 **Gotam Dulhani**
 GitHub: [https://github.com/Gotam-Dulhani](https://github.com/Gotam-Dulhani)
 
 ---
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
-* [Streamlit Documentation](https://docs.streamlit.io/)
-* [scikit-learn Documentation](https://scikit-learn.org/stable/)
-* [pandas Documentation](https://pandas.pydata.org/docs/)
-* Open Source Community ❤️
+- [Flask Documentation](https://flask.palletsprojects.com/)
+- [scikit-learn Documentation](https://scikit-learn.org/stable/)
+- [pandas Documentation](https://pandas.pydata.org/docs/)
+- [Vercel Python Runtime](https://vercel.com/docs/functions/runtimes/python)
